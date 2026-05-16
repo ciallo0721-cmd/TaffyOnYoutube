@@ -66,6 +66,14 @@
     BILIBILI_THUMBNAIL_HOST_SELECTOR
   ].join(", ");
 
+  const YOUTUBE_SHORTS_CONTAINER_SELECTOR = [
+    "ytd-rich-grid-slim-media",
+    "ytd-reel-item-renderer",
+    "ytd-reel-video-renderer",
+    "ytd-shorts",
+    "ytm-shorts-lockup-view-model"
+  ].join(", ");
+
   const DEFAULT_SETTINGS = {
     enabled: true,
     size: 35,
@@ -175,8 +183,10 @@
   }
 
   function getOverlayWidth(thumbnail, slot = 0, overlayCount = 1) {
-    const width = settings.size * getRandomScale(thumbnail, slot);
-    const cappedWidth = overlayCount > 1 ? Math.min(width, 36) : width;
+    const isShortsThumbnail = isYoutubeShortsThumbnail(thumbnail);
+    const width = settings.size * getRandomScale(thumbnail, slot) * (isShortsThumbnail ? 1.55 : 1);
+    const maxWidth = isShortsThumbnail ? (overlayCount > 1 ? 48 : 64) : 36;
+    const cappedWidth = overlayCount > 1 || isShortsThumbnail ? Math.min(width, maxWidth) : width;
     return Math.round(cappedWidth * 10) / 10;
   }
 
@@ -260,6 +270,23 @@
 
   function isImageOnlyElement(element) {
     return ["IMG", "PICTURE", "SOURCE"].includes(element.tagName);
+  }
+
+  function isYoutubeShortsThumbnail(thumbnail) {
+    if (!location.hostname.includes("youtube.com")) {
+      return false;
+    }
+
+    if (
+      thumbnail.closest(YOUTUBE_SHORTS_CONTAINER_SELECTOR) ||
+      thumbnail.querySelector("a[href*='/shorts/']") ||
+      thumbnail.closest("a[href*='/shorts/']")
+    ) {
+      return true;
+    }
+
+    const { width, height } = thumbnail.getBoundingClientRect();
+    return width > 0 && height > 0 && height / width > 1.25;
   }
 
   function canUseTwoOverlays(thumbnail) {
