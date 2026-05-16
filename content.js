@@ -219,8 +219,8 @@
   }
 
   function getPlayerOverlayWidth(player) {
-    const width = settings.size * getRandomScale(player) * 0.65;
-    const cappedWidth = Math.min(26, Math.max(14, width));
+    const width = settings.size * getRandomScale(player) * 0.95;
+    const cappedWidth = Math.min(38, Math.max(24, width));
     return Math.round(cappedWidth * 10) / 10;
   }
 
