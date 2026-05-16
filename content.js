@@ -184,8 +184,8 @@
 
   function getOverlayWidth(thumbnail, slot = 0, overlayCount = 1) {
     const isShortsThumbnail = isYoutubeShortsThumbnail(thumbnail);
-    const width = settings.size * getRandomScale(thumbnail, slot) * (isShortsThumbnail ? 1.55 : 1);
-    const maxWidth = isShortsThumbnail ? (overlayCount > 1 ? 48 : 64) : 36;
+    const width = settings.size * getRandomScale(thumbnail, slot) * (isShortsThumbnail ? 2.15 : 1);
+    const maxWidth = isShortsThumbnail ? (overlayCount > 1 ? 58 : 78) : 36;
     const cappedWidth = overlayCount > 1 || isShortsThumbnail ? Math.min(width, maxWidth) : width;
     return Math.round(cappedWidth * 10) / 10;
   }
