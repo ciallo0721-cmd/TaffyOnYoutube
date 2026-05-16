@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Taffy Overlay</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup__header">
+        <h1>Taffy Overlay</h1>
+        <p>永雏塔菲 / Taffy</p>
+      </header>
+
+      <label class="toggle-row">
+        <span>Enabled</span>
+        <input id="enabled" type="checkbox" role="switch">
+      </label>
+
+      <label class="field" for="size">
+        <span class="field__label">
+          <span>Overlay size</span>
+          <output id="sizeValue" for="size">35%</output>
+        </span>
+        <input id="size" type="range" min="20" max="60" step="1">
+      </label>
+
+      <label class="field" for="position">
+        <span class="field__label">Position</span>
+        <select id="position">
+          <option value="random">Random</option>
+          <option value="bottom-right">Bottom-right</option>
+          <option value="bottom-left">Bottom-left</option>
+        </select>
+      </label>
+
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

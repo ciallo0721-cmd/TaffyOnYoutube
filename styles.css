@@ -1,0 +1,41 @@
+.taffy-thumbnail-target {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.taffy-overlay-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  contain: layout paint !important;
+}
+
+.taffy-overlay {
+  position: absolute !important;
+  bottom: 4% !important;
+  width: var(--taffy-width, 35%) !important;
+  height: auto !important;
+  max-width: none !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  transform: rotate(var(--taffy-rotation, 0deg)) !important;
+  transform-origin: 50% 100% !important;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45)) !important;
+}
+
+.taffy-overlay--right {
+  right: 4% !important;
+  left: auto !important;
+}
+
+.taffy-overlay--left {
+  left: 4% !important;
+  right: auto !important;
+}
+
+.taffy-overlay--hidden {
+  display: none !important;
+}
