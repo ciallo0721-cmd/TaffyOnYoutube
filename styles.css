@@ -36,6 +36,10 @@
   right: auto !important;
 }
 
+.taffy-overlay--pair {
+  bottom: 3% !important;
+}
+
 .taffy-overlay--hidden {
   display: none !important;
 }

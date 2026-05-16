@@ -22,7 +22,6 @@
     ".bili-cover-card__cover",
     ".video-card__image",
     ".video-card__cover",
-    ".video-card__content",
     ".video-page-card-small .pic-box",
     ".video-page-card-small .pic",
     ".card-box .pic-box",
@@ -39,13 +38,32 @@
     "a[href*='/video/'][class*='pic']"
   ].join(", ");
 
+  const BILIBILI_THUMBNAIL_HOST_SELECTOR = [
+    ".bili-video-card__image--wrap",
+    ".bili-cover-card__thumbnail",
+    ".bili-cover-card__cover",
+    ".video-card__image",
+    ".video-card__cover",
+    ".video-page-card-small .pic-box",
+    ".card-box .pic-box",
+    ".video-item .img-anchor",
+    ".video-item .img",
+    ".small-item .cover",
+    ".rank-item .preview",
+    ".rank-item .img",
+    ".history-card__cover",
+    ".fav-video-list__cover",
+    "a[href*='/video/'][class*='cover']",
+    "a[href*='/video/'][class*='pic']"
+  ].join(", ");
+
   const THUMBNAIL_SELECTOR = [YOUTUBE_THUMBNAIL_SELECTOR, BILIBILI_THUMBNAIL_SELECTOR].join(", ");
 
   const DIRECT_THUMBNAIL_HOST_SELECTOR = [
     "ytd-thumbnail",
     "yt-thumbnail-view-model",
     "a.yt-lockup-view-model-wiz__content-image",
-    BILIBILI_THUMBNAIL_SELECTOR
+    BILIBILI_THUMBNAIL_HOST_SELECTOR
   ].join(", ");
 
   const DEFAULT_SETTINGS = {
@@ -79,37 +97,68 @@
     return thumbnail.dataset.taffySide;
   }
 
-  function getRandomScale(thumbnail) {
-    if (!thumbnail.dataset.taffyScale) {
-      thumbnail.dataset.taffyScale = (0.8 + Math.random() * 0.4).toFixed(3);
+  function getRandomScale(thumbnail, slot = 0) {
+    const key = `taffyScale${slot}`;
+
+    if (!thumbnail.dataset[key]) {
+      thumbnail.dataset[key] = (0.8 + Math.random() * 0.4).toFixed(3);
     }
 
-    return Number(thumbnail.dataset.taffyScale);
+    return Number(thumbnail.dataset[key]);
   }
 
-  function getRandomRotation(thumbnail) {
-    if (!thumbnail.dataset.taffyRotation) {
-      thumbnail.dataset.taffyRotation = (-4 + Math.random() * 8).toFixed(2);
+  function getRandomRotation(thumbnail, slot = 0) {
+    const key = `taffyRotation${slot}`;
+
+    if (!thumbnail.dataset[key]) {
+      thumbnail.dataset[key] = (-4 + Math.random() * 8).toFixed(2);
     }
 
-    return Number(thumbnail.dataset.taffyRotation);
+    return Number(thumbnail.dataset[key]);
   }
 
-  function getRandomImageUrl(thumbnail) {
+  function getImageIndexes(thumbnail, overlayCount) {
     if (!taffyImageUrls.length) {
-      return FALLBACK_TAFFY_IMAGE_URL;
+      return [0];
     }
 
     if (thumbnail.dataset.taffyAssetVersion !== taffyAssetVersion) {
       thumbnail.dataset.taffyAssetVersion = taffyAssetVersion;
-      delete thumbnail.dataset.taffyImageIndex;
+      delete thumbnail.dataset.taffyImageIndexes;
     }
 
-    if (!thumbnail.dataset.taffyImageIndex) {
-      thumbnail.dataset.taffyImageIndex = String(Math.floor(Math.random() * taffyImageUrls.length));
+    const storedIndexes = (thumbnail.dataset.taffyImageIndexes || "")
+      .split(",")
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value >= 0 && value < taffyImageUrls.length);
+
+    const needsNewIndexes =
+      storedIndexes.length < overlayCount ||
+      new Set(storedIndexes.slice(0, overlayCount)).size < overlayCount;
+
+    if (!needsNewIndexes) {
+      return storedIndexes.slice(0, overlayCount);
     }
 
-    const imageIndex = Number(thumbnail.dataset.taffyImageIndex);
+    const availableIndexes = taffyImageUrls.map((_, index) => index);
+    const imageIndexes = [];
+
+    for (let slot = 0; slot < overlayCount; slot += 1) {
+      const randomIndex = Math.floor(Math.random() * availableIndexes.length);
+      imageIndexes.push(availableIndexes.splice(randomIndex, 1)[0]);
+
+      if (!availableIndexes.length) {
+        break;
+      }
+    }
+
+    thumbnail.dataset.taffyImageIndexes = imageIndexes.join(",");
+    return imageIndexes;
+  }
+
+  function getRandomImageUrl(thumbnail, slot = 0, overlayCount = 1) {
+    const imageIndexes = getImageIndexes(thumbnail, overlayCount);
+    const imageIndex = imageIndexes[slot] ?? imageIndexes[0];
     return taffyImageUrls[imageIndex] || FALLBACK_TAFFY_IMAGE_URL;
   }
 
@@ -125,18 +174,20 @@
     return getRandomSide(thumbnail);
   }
 
-  function getOverlayWidth(thumbnail) {
-    const width = settings.size * getRandomScale(thumbnail);
-    return Math.round(width * 10) / 10;
+  function getOverlayWidth(thumbnail, slot = 0, overlayCount = 1) {
+    const width = settings.size * getRandomScale(thumbnail, slot);
+    const cappedWidth = overlayCount > 1 ? Math.min(width, 36) : width;
+    return Math.round(cappedWidth * 10) / 10;
   }
 
-  function createOverlay() {
+  function createOverlay(slot) {
     const overlay = document.createElement("img");
     overlay.className = "taffy-overlay";
     overlay.alt = "";
     overlay.decoding = "async";
     overlay.loading = "lazy";
     overlay.dataset.taffyOverlay = "true";
+    overlay.dataset.taffySlot = String(slot);
     return overlay;
   }
 
@@ -168,9 +219,11 @@
       return modernThumbnail;
     }
 
-    const bilibiliThumbnail = element.matches(BILIBILI_THUMBNAIL_SELECTOR)
-      ? element
-      : element.closest(BILIBILI_THUMBNAIL_SELECTOR) || element.querySelector(BILIBILI_THUMBNAIL_SELECTOR);
+    const bilibiliThumbnail = findOutermostThumbnailHost(
+      element,
+      BILIBILI_THUMBNAIL_HOST_SELECTOR,
+      BILIBILI_THUMBNAIL_SELECTOR
+    );
 
     if (bilibiliThumbnail) {
       return bilibiliThumbnail;
@@ -179,8 +232,70 @@
     return element;
   }
 
+  function findOutermostThumbnailHost(element, hostSelector, fallbackSelector) {
+    let host =
+      (element.matches(hostSelector) && element) ||
+      element.closest(hostSelector) ||
+      element.querySelector(hostSelector) ||
+      (element.matches(fallbackSelector) && element) ||
+      element.closest(fallbackSelector) ||
+      element.querySelector(fallbackSelector);
+
+    if (!host) {
+      return null;
+    }
+
+    let parent = host.parentElement;
+
+    while (parent && parent !== document.body) {
+      if (parent.matches(hostSelector)) {
+        host = parent;
+      }
+
+      parent = parent.parentElement;
+    }
+
+    return host;
+  }
+
   function isImageOnlyElement(element) {
     return ["IMG", "PICTURE", "SOURCE"].includes(element.tagName);
+  }
+
+  function canUseTwoOverlays(thumbnail) {
+    if (taffyImageUrls.length < 2) {
+      return false;
+    }
+
+    const thumbnailWidth = thumbnail.getBoundingClientRect().width || thumbnail.clientWidth;
+    return !thumbnailWidth || thumbnailWidth >= 220;
+  }
+
+  function getOverlayCount(thumbnail) {
+    if (!canUseTwoOverlays(thumbnail)) {
+      thumbnail.dataset.taffyOverlayCount = "1";
+      return 1;
+    }
+
+    if (!thumbnail.dataset.taffyOverlayCount) {
+      thumbnail.dataset.taffyOverlayCount = Math.random() < 0.38 ? "2" : "1";
+    }
+
+    return thumbnail.dataset.taffyOverlayCount === "2" ? 2 : 1;
+  }
+
+  function getOverlaySide(thumbnail, slot, overlayCount) {
+    if (overlayCount < 2) {
+      return resolveSide(thumbnail);
+    }
+
+    const primarySide = resolveSide(thumbnail);
+
+    if (slot === 0) {
+      return primarySide;
+    }
+
+    return primarySide === "left" ? "right" : "left";
   }
 
   function getOverlayLayer(thumbnail) {
@@ -198,13 +313,14 @@
     return layer;
   }
 
-  function updateOverlay(thumbnail, overlay) {
-    const side = resolveSide(thumbnail);
-    const imageUrl = getRandomImageUrl(thumbnail);
-    const widthValue = `${getOverlayWidth(thumbnail)}%`;
-    const rotationValue = `${getRandomRotation(thumbnail)}deg`;
+  function updateOverlay(thumbnail, overlay, slot, overlayCount) {
+    const side = getOverlaySide(thumbnail, slot, overlayCount);
+    const imageUrl = getRandomImageUrl(thumbnail, slot, overlayCount);
+    const widthValue = `${getOverlayWidth(thumbnail, slot, overlayCount)}%`;
+    const rotationValue = `${getRandomRotation(thumbnail, slot)}deg`;
 
     thumbnail.classList.add("taffy-thumbnail-target");
+    overlay.dataset.taffySlot = String(slot);
     if (overlay.src !== imageUrl) {
       overlay.src = imageUrl;
     }
@@ -219,6 +335,7 @@
 
     overlay.classList.toggle("taffy-overlay--left", side === "left");
     overlay.classList.toggle("taffy-overlay--right", side === "right");
+    overlay.classList.toggle("taffy-overlay--pair", overlayCount > 1);
     overlay.classList.toggle("taffy-overlay--hidden", !settings.enabled);
   }
 
@@ -236,22 +353,34 @@
     thumbnail.dataset.taffyProcessed = "true";
 
     const overlayLayer = getOverlayLayer(thumbnail);
-    let overlay = overlayLayer.querySelector(":scope > .taffy-overlay");
+    const overlayCount = getOverlayCount(thumbnail);
+    const activeOverlays = new Set();
 
-    // Video sites frequently rebuild thumbnail internals. Keep one overlay in
+    // Video sites frequently rebuild thumbnail internals. Keep one overlay layer in
     // our own layer so hover previews and route changes do not create duplicates.
-    thumbnail.querySelectorAll(".taffy-overlay").forEach((existingOverlay) => {
-      if (existingOverlay !== overlay) {
-        existingOverlay.remove();
+    thumbnail.querySelectorAll(".taffy-overlay-layer").forEach((existingLayer) => {
+      if (existingLayer !== overlayLayer) {
+        existingLayer.remove();
       }
     });
 
-    if (!overlay) {
-      overlay = createOverlay();
-      overlayLayer.appendChild(overlay);
+    for (let slot = 0; slot < overlayCount; slot += 1) {
+      let overlay = overlayLayer.querySelector(`:scope > .taffy-overlay[data-taffy-slot="${slot}"]`);
+
+      if (!overlay) {
+        overlay = createOverlay(slot);
+        overlayLayer.appendChild(overlay);
+      }
+
+      activeOverlays.add(overlay);
+      updateOverlay(thumbnail, overlay, slot, overlayCount);
     }
 
-    updateOverlay(thumbnail, overlay);
+    overlayLayer.querySelectorAll(":scope > .taffy-overlay").forEach((existingOverlay) => {
+      if (!activeOverlays.has(existingOverlay)) {
+        existingOverlay.remove();
+      }
+    });
   }
 
   function processThumbnails(root = document) {
