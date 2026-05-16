@@ -1,12 +1,28 @@
 .taffy-thumbnail-target {
   position: relative !important;
   overflow: hidden !important;
+  isolation: isolate !important;
 }
 
 .taffy-overlay-layer {
   position: absolute !important;
   inset: 0 !important;
-  z-index: 2147483647 !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  contain: layout paint !important;
+}
+
+.taffy-player-target {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+}
+
+.taffy-player-overlay-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 20 !important;
   pointer-events: none !important;
   overflow: hidden !important;
   contain: layout paint !important;
@@ -18,7 +34,7 @@
   width: var(--taffy-width, 35%) !important;
   height: auto !important;
   max-width: none !important;
-  z-index: 9999 !important;
+  z-index: 1 !important;
   pointer-events: none !important;
   user-select: none !important;
   transform: rotate(var(--taffy-rotation, 0deg)) !important;
@@ -38,6 +54,11 @@
 
 .taffy-overlay--pair {
   bottom: 3% !important;
+}
+
+.taffy-overlay--player {
+  bottom: 12% !important;
+  width: var(--taffy-width, 22%) !important;
 }
 
 .taffy-overlay--hidden {
