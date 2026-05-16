@@ -5,13 +5,47 @@
   let taffyImageUrls = [FALLBACK_TAFFY_IMAGE_URL];
   let taffyAssetVersion = "fallback";
 
-  const THUMBNAIL_SELECTOR = [
+  const YOUTUBE_THUMBNAIL_SELECTOR = [
     "ytd-thumbnail",
     "yt-thumbnail-view-model",
     "a.yt-lockup-view-model-wiz__content-image",
     "ytd-rich-grid-media ytd-thumbnail",
     "ytd-video-renderer ytd-thumbnail",
     "ytd-compact-video-renderer ytd-thumbnail"
+  ].join(", ");
+
+  const BILIBILI_THUMBNAIL_SELECTOR = [
+    ".bili-video-card__image--wrap",
+    ".bili-video-card__image",
+    ".bili-video-card__cover",
+    ".bili-cover-card__thumbnail",
+    ".bili-cover-card__cover",
+    ".video-card__image",
+    ".video-card__cover",
+    ".video-card__content",
+    ".video-page-card-small .pic-box",
+    ".video-page-card-small .pic",
+    ".card-box .pic-box",
+    ".card-box .pic",
+    ".video-item .img",
+    ".video-item .img-anchor",
+    ".video-item .lazy-img",
+    ".small-item .cover",
+    ".rank-item .preview",
+    ".rank-item .img",
+    ".history-card__cover",
+    ".fav-video-list__cover",
+    "a[href*='/video/'][class*='cover']",
+    "a[href*='/video/'][class*='pic']"
+  ].join(", ");
+
+  const THUMBNAIL_SELECTOR = [YOUTUBE_THUMBNAIL_SELECTOR, BILIBILI_THUMBNAIL_SELECTOR].join(", ");
+
+  const DIRECT_THUMBNAIL_HOST_SELECTOR = [
+    "ytd-thumbnail",
+    "yt-thumbnail-view-model",
+    "a.yt-lockup-view-model-wiz__content-image",
+    BILIBILI_THUMBNAIL_SELECTOR
   ].join(", ");
 
   const DEFAULT_SETTINGS = {
@@ -134,10 +168,26 @@
       return modernThumbnail;
     }
 
+    const bilibiliThumbnail = element.matches(BILIBILI_THUMBNAIL_SELECTOR)
+      ? element
+      : element.closest(BILIBILI_THUMBNAIL_SELECTOR) || element.querySelector(BILIBILI_THUMBNAIL_SELECTOR);
+
+    if (bilibiliThumbnail) {
+      return bilibiliThumbnail;
+    }
+
     return element;
   }
 
+  function isImageOnlyElement(element) {
+    return ["IMG", "PICTURE", "SOURCE"].includes(element.tagName);
+  }
+
   function getOverlayLayer(thumbnail) {
+    if (isImageOnlyElement(thumbnail) && thumbnail.parentElement) {
+      thumbnail = thumbnail.parentElement;
+    }
+
     let layer = thumbnail.querySelector(":scope > .taffy-overlay-layer");
 
     if (!layer) {
@@ -179,13 +229,17 @@
       return;
     }
 
+    if (isImageOnlyElement(thumbnail) && thumbnail.parentElement) {
+      thumbnail = thumbnail.parentElement;
+    }
+
     thumbnail.dataset.taffyProcessed = "true";
 
     const overlayLayer = getOverlayLayer(thumbnail);
     let overlay = overlayLayer.querySelector(":scope > .taffy-overlay");
 
-    // YouTube frequently rebuilds thumbnail internals. Keep one overlay in our
-    // own layer so hover previews and route changes do not create duplicates.
+    // Video sites frequently rebuild thumbnail internals. Keep one overlay in
+    // our own layer so hover previews and route changes do not create duplicates.
     thumbnail.querySelectorAll(".taffy-overlay").forEach((existingOverlay) => {
       if (existingOverlay !== overlay) {
         existingOverlay.remove();
@@ -233,7 +287,7 @@
 
     return Boolean(
       node.matches(THUMBNAIL_SELECTOR) ||
-        node.closest("ytd-thumbnail, yt-thumbnail-view-model, a.yt-lockup-view-model-wiz__content-image") ||
+        node.closest(DIRECT_THUMBNAIL_HOST_SELECTOR) ||
         node.querySelector?.(THUMBNAIL_SELECTOR)
     );
   }

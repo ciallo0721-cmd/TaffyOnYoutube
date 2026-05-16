@@ -1,17 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Taffy Overlay",
-  "description": "Adds a Taffy overlay image to YouTube video thumbnails without replacing the original thumbnails.",
-  "version": "1.0.3",
+  "name": "Taffy Overlay for YouTube and Bilibili",
+  "description": "Adds a Taffy overlay image to YouTube and Bilibili video thumbnails without replacing the original thumbnails.",
+  "version": "1.1.0",
   "permissions": ["storage"],
-  "host_permissions": ["https://www.youtube.com/*"],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://www.bilibili.com/*",
+    "https://search.bilibili.com/*",
+    "https://space.bilibili.com/*"
+  ],
   "action": {
     "default_title": "Taffy Overlay",
     "default_popup": "popup.html"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://www.bilibili.com/*",
+        "https://search.bilibili.com/*",
+        "https://space.bilibili.com/*"
+      ],
       "css": ["styles.css"],
       "js": ["content.js"],
       "run_at": "document_idle"
@@ -24,7 +34,12 @@
         "images/assets.json",
         "images/processed/*.png"
       ],
-      "matches": ["https://www.youtube.com/*"]
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://www.bilibili.com/*",
+        "https://search.bilibili.com/*",
+        "https://space.bilibili.com/*"
+      ]
     }
   ]
 }
