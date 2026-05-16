@@ -30,7 +30,7 @@
 
 .taffy-overlay {
   position: absolute !important;
-  bottom: 4% !important;
+  bottom: 0 !important;
   width: var(--taffy-width, 35%) !important;
   height: auto !important;
   max-width: none !important;
@@ -53,11 +53,11 @@
 }
 
 .taffy-overlay--pair {
-  bottom: 3% !important;
+  bottom: 0 !important;
 }
 
 .taffy-overlay--player {
-  bottom: 12% !important;
+  bottom: 0 !important;
   width: var(--taffy-width, 22%) !important;
 }
 
